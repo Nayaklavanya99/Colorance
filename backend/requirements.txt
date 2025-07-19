@@ -11,3 +11,7 @@ huggingface-hub
 torch
 torchvision
 timm
+pymongo
+flask-bcrypt
+flask-jwt-extended
+python-dotenv

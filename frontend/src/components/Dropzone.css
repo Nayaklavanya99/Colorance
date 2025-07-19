@@ -56,6 +56,13 @@
   border-radius: 8px;
 }
 
+.login-prompt {
+  margin-top: 1rem;
+  color: #4d9fff;
+  font-weight: 500;
+  font-style: italic;
+}
+
 /* Responsive styles */
 @media (max-width: 768px) {
   .dropzone {

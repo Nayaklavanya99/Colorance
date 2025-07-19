@@ -29,6 +29,21 @@
   color: #aaa;
 }
 
+.welcome-message {
+  margin-top: 1rem;
+  color: #9b4dff;
+  font-weight: 500;
+}
+
+.login-required {
+  margin-top: 1rem;
+  color: #4d9fff;
+  font-weight: 500;
+  padding: 0.5rem 1rem;
+  background-color: rgba(77, 159, 255, 0.1);
+  border-radius: 4px;
+}
+
 .loading {
   display: flex;
   flex-direction: column;

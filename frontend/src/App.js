@@ -1,18 +1,29 @@
-import React, { useState } from 'react';
+import React, { useState, useContext, useEffect } from 'react';
 import axios from 'axios';
 import './App.css';
 import Dropzone from './components/Dropzone';
 import Navbar from './components/Navbar';
 import ResultSection from './components/ResultSection';
+import SuccessModal from './components/SuccessModal';
+import { AuthProvider, AuthContext } from './context/AuthContext';
 
-function App() {
+function AppContent() {
   const [originalImage, setOriginalImage] = useState(null);
   const [colorizedImage, setColorizedImage] = useState(null);
   const [filename, setFilename] = useState('');
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState('');
+  const [showSuccessModal, setShowSuccessModal] = useState(false);
+  const [successMessage, setSuccessMessage] = useState('');
+  const { currentUser, loading: authLoading } = useContext(AuthContext);
 
   const handleImageUpload = async (file) => {
+    // Check if user is logged in
+    if (!currentUser) {
+      setError('Please log in to colorize images');
+      return;
+    }
+    
     setLoading(true);
     setError('');
     setColorizedImage(null);
@@ -29,9 +40,11 @@ function App() {
       const formData = new FormData();
       formData.append('image', file);
 
+      // Include auth token in the request
       const response = await axios.post('/api/colorize', formData, {
         headers: {
-          'Content-Type': 'multipart/form-data'
+          'Content-Type': 'multipart/form-data',
+          'Authorization': `Bearer ${localStorage.getItem('token')}`
         },
         timeout: 30000 // 30 seconds timeout for large images
       });
@@ -39,6 +52,10 @@ function App() {
       // Display the colorized image
       setColorizedImage(`data:image/jpeg;base64,${response.data.colorized_image}`);
       setFilename(response.data.filename);
+      
+      // Show success message
+      setSuccessMessage('Image colorized successfully!');
+      setShowSuccessModal(true);
     } catch (err) {
       console.error('Error colorizing image:', err);
       if (err.response && err.response.data && err.response.data.error) {
@@ -97,7 +114,23 @@ function App() {
       <footer>
         <p>&copy; {new Date().getFullYear()} Colorance. All rights reserved.</p>
       </footer>
+      
+      {showSuccessModal && (
+        <SuccessModal
+          message={successMessage}
+          onClose={() => setShowSuccessModal(false)}
+          autoCloseTime={3000}
+        />
+      )}
     </div>
+  );
+}
+
+function App() {
+  return (
+    <AuthProvider>
+      <AppContent />
+    </AuthProvider>
   );
 }
 

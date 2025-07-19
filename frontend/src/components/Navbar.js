@@ -1,11 +1,13 @@
-import React, { useState } from 'react';
+import React, { useState, useContext } from 'react';
 import './Navbar.css';
 import LoginModal from './LoginModal';
 import SignupModal from './SignupModal';
+import { AuthContext } from '../context/AuthContext';
 
 function Navbar() {
   const [showLoginModal, setShowLoginModal] = useState(false);
   const [showSignupModal, setShowSignupModal] = useState(false);
+  const { currentUser, logout } = useContext(AuthContext);
 
   return (
     <nav className="navbar">
@@ -15,8 +17,20 @@ function Navbar() {
         </div>
         <div className="navbar-links">
           <a href="/" className="active">Home</a>
-          <button className="nav-button" onClick={() => setShowLoginModal(true)}>Login</button>
-          <button className="nav-button signup" onClick={() => setShowSignupModal(true)}>Sign Up</button>
+          
+          {currentUser ? (
+            <>
+              <div className="user-info">
+                <span className="user-name">Hello, {currentUser.name}</span>
+                <button className="nav-button" onClick={logout}>Logout</button>
+              </div>
+            </>
+          ) : (
+            <>
+              <button className="nav-button" onClick={() => setShowLoginModal(true)}>Login</button>
+              <button className="nav-button signup" onClick={() => setShowSignupModal(true)}>Sign Up</button>
+            </>
+          )}
         </div>
       </div>
       

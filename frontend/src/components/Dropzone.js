@@ -1,13 +1,23 @@
-import React, { useCallback, useState } from 'react';
+import React, { useCallback, useState, useContext } from 'react';
 import { useDropzone } from 'react-dropzone';
+import { AuthContext } from '../context/AuthContext';
+import LoginModal from './LoginModal';
 import './Dropzone.css';
 
 function Dropzone({ onImageUpload }) {
   const [isDragging, setIsDragging] = useState(false);
   const [fileError, setFileError] = useState('');
+  const { currentUser, loading } = useContext(AuthContext);
+  const [showLoginModal, setShowLoginModal] = useState(false);
 
   const onDrop = useCallback((acceptedFiles, rejectedFiles) => {
     setFileError('');
+    
+    // Always show login modal if user is not logged in
+    if (!currentUser && !loading) {
+      setShowLoginModal(true);
+      return;
+    }
     
     if (rejectedFiles && rejectedFiles.length > 0) {
       setFileError('Please upload a valid image file (JPG, PNG, BMP, TIFF)');
@@ -66,9 +76,21 @@ function Dropzone({ onImageUpload }) {
           <h3>Drag & Drop your black and white image here</h3>
           <p>or click to browse files</p>
           <p className="file-info">Supports JPG, PNG, BMP, TIFF (max 10MB)</p>
+          {/* No login prompt text */}
         </div>
       </div>
       {fileError && <div className="file-error">{fileError}</div>}
+      
+      {showLoginModal && (
+        <LoginModal 
+          onClose={() => setShowLoginModal(false)} 
+          onSignupClick={() => {
+            setShowLoginModal(false);
+            // You would need to implement this part to show signup
+            // or modify LoginModal to include signup functionality
+          }} 
+        />
+      )}
     </>
   );
 }
