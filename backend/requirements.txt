@@ -11,7 +11,8 @@ huggingface-hub
 torch
 torchvision
 timm
-pymongo
+pymongo[srv]
 flask-bcrypt
 flask-jwt-extended
 python-dotenv
+certifi

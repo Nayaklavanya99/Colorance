@@ -23,16 +23,32 @@ app.config['JWT_ACCESS_TOKEN_EXPIRES'] = timedelta(days=1)
 jwt = JWTManager(app)
 bcrypt = Bcrypt(app)
 
+# In-memory storage as fallback
+users_db = {}
+images_db = []
+
 # MongoDB Connection
 try:
-    mongo_client = MongoClient(os.getenv('MONGO_URI', 'mongodb://localhost:27017'))
+    mongo_uri = os.getenv('MONGO_URI')
+    print(f"Connecting to MongoDB...")
+    
+    # Simple connection without SSL config
+    mongo_client = MongoClient(mongo_uri)
+    
+    # Test connection with shorter timeout
+    mongo_client.admin.command('ping')
     db = mongo_client[os.getenv('DATABASE_NAME', 'colorance_db')]
     users_collection = db.users
     images_collection = db.images
     print("MongoDB connected successfully")
+    USE_MONGODB = True
 except Exception as e:
-    print(f"MongoDB connection error: {e}")
+    print(f"MongoDB connection failed: {str(e)[:100]}...")
+    print("Using in-memory storage instead")
     db = None
+    users_collection = None
+    images_collection = None
+    USE_MONGODB = False
 
 # Create uploads directory if it doesn't exist
 UPLOAD_FOLDER = 'uploads'
@@ -93,8 +109,12 @@ def register():
             return jsonify({'error': 'Missing required fields'}), 400
         
         # Check if user already exists
-        if users_collection.find_one({'email': data['email']}):
-            return jsonify({'error': 'User already exists'}), 409
+        if USE_MONGODB:
+            if users_collection.find_one({'email': data['email']}):
+                return jsonify({'error': 'User already exists'}), 409
+        else:
+            if data['email'] in users_db:
+                return jsonify({'error': 'User already exists'}), 409
         
         # Hash password
         hashed_password = bcrypt.generate_password_hash(data['password']).decode('utf-8')
@@ -108,7 +128,13 @@ def register():
         }
         
         # Insert user into database
-        users_collection.insert_one(user)
+        if USE_MONGODB:
+            users_collection.insert_one(user)
+            print(f"User saved to MongoDB: {data['email']}")
+        else:
+            users_db[data['email']] = user
+            print(f"User saved to in-memory storage: {data['email']}")
+            print(f"Total users in memory: {len(users_db)}")
         
         # Create access token
         access_token = create_access_token(identity=data['email'])
@@ -141,7 +167,13 @@ def login():
             return jsonify({'error': 'Missing email or password'}), 400
         
         # Find user
-        user = users_collection.find_one({'email': data['email']})
+        if USE_MONGODB:
+            user = users_collection.find_one({'email': data['email']})
+            print(f"MongoDB lookup for: {data['email']}")
+        else:
+            user = users_db.get(data['email'])
+            print(f"In-memory lookup for: {data['email']}, found: {user is not None}")
+            print(f"Available users: {list(users_db.keys())}")
         
         # Check if user exists and password is correct
         if not user:
@@ -179,7 +211,10 @@ def get_user():
         print(f"User data requested for: {email}")
         
         # Find user
-        user = users_collection.find_one({'email': email})
+        if USE_MONGODB:
+            user = users_collection.find_one({'email': email})
+        else:
+            user = users_db.get(email)
         
         if not user:
             return jsonify({'error': 'User not found'}), 404
@@ -232,13 +267,18 @@ def colorize_image():
             print(f"Saved colorized image: {colored_path}")
             
             # Save image record to database if user is authenticated
-            if user_email and db is not None:
-                images_collection.insert_one({
+            if user_email:
+                image_record = {
                     'user_email': user_email,
                     'original_filename': file.filename,
                     'colorized_filename': f"colored_{file.filename}",
                     'created_at': np.datetime64('now').astype(str)
-                })
+                }
+                
+                if USE_MONGODB and db is not None:
+                    images_collection.insert_one(image_record)
+                else:
+                    images_db.append(image_record)
             
         else:
             print("Model not loaded, cannot process image")
@@ -302,6 +342,14 @@ def get_image_history():
     except Exception as e:
         print(f"Get image history error: {e}")
         return jsonify({'error': 'Failed to get image history'}), 500
+
+@app.route('/api/debug/users', methods=['GET'])
+def debug_users():
+    return jsonify({
+        'use_mongodb': USE_MONGODB,
+        'users_in_memory': len(users_db),
+        'user_emails': list(users_db.keys())
+    })
 
 if __name__ == '__main__':
     app.run(debug=True, port=5000)
