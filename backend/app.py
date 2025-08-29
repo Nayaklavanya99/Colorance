@@ -314,7 +314,11 @@ def get_image_history():
         email = get_jwt_identity()
         
         # Get user's images
-        images = list(images_collection.find({'user_email': email}).sort('created_at', -1))
+        if USE_MONGODB:
+            images = list(images_collection.find({'user_email': email}).sort('created_at', -1))
+        else:
+            images = [img for img in images_db if img.get('user_email') == email]
+            images.sort(key=lambda x: x.get('created_at', ''), reverse=True)
         
         # Format images for response
         image_history = []
@@ -331,9 +335,11 @@ def get_image_history():
                     colorized_data = base64.b64encode(img_file.read()).decode('utf-8')
                 
                 image_history.append({
-                    'id': str(img['_id']),
+                    'id': str(img['_id']) if USE_MONGODB else str(hash(f"{img['user_email']}{img['original_filename']}{img['created_at']}"))[1:9],
                     'original_image': original_data,
                     'colorized_image': colorized_data,
+                    'original_filename': img['original_filename'],
+                    'colorized_filename': img['colorized_filename'],
                     'created_at': img['created_at']
                 })
         
@@ -342,6 +348,61 @@ def get_image_history():
     except Exception as e:
         print(f"Get image history error: {e}")
         return jsonify({'error': 'Failed to get image history'}), 500
+
+@app.route('/api/images/<image_id>', methods=['DELETE'])
+@jwt_required()
+def delete_image(image_id):
+    try:
+        # Get user email from token
+        email = get_jwt_identity()
+        
+        # Find and delete the image record
+        if USE_MONGODB:
+            from bson import ObjectId
+            image = images_collection.find_one({'_id': ObjectId(image_id), 'user_email': email})
+            if not image:
+                return jsonify({'error': 'Image not found'}), 404
+            
+            # Delete files
+            original_path = os.path.join(UPLOAD_FOLDER, image['original_filename'])
+            colorized_path = os.path.join(UPLOAD_FOLDER, image['colorized_filename'])
+            
+            if os.path.exists(original_path):
+                os.remove(original_path)
+            if os.path.exists(colorized_path):
+                os.remove(colorized_path)
+            
+            # Delete from database
+            images_collection.delete_one({'_id': ObjectId(image_id), 'user_email': email})
+        else:
+            # Find image in memory storage
+            image_to_delete = None
+            for i, img in enumerate(images_db):
+                img_id = str(hash(f"{img['user_email']}{img['original_filename']}{img['created_at']}"))[1:9]
+                if img_id == image_id and img.get('user_email') == email:
+                    image_to_delete = img
+                    break
+            
+            if not image_to_delete:
+                return jsonify({'error': 'Image not found'}), 404
+            
+            # Delete files
+            original_path = os.path.join(UPLOAD_FOLDER, image_to_delete['original_filename'])
+            colorized_path = os.path.join(UPLOAD_FOLDER, image_to_delete['colorized_filename'])
+            
+            if os.path.exists(original_path):
+                os.remove(original_path)
+            if os.path.exists(colorized_path):
+                os.remove(colorized_path)
+            
+            # Remove from memory storage
+            images_db.remove(image_to_delete)
+        
+        return jsonify({'message': 'Image deleted successfully'}), 200
+        
+    except Exception as e:
+        print(f"Delete image error: {e}")
+        return jsonify({'error': 'Failed to delete image'}), 500
 
 @app.route('/api/debug/users', methods=['GET'])
 def debug_users():

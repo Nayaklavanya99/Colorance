@@ -4,7 +4,7 @@ import LoginModal from './LoginModal';
 import SignupModal from './SignupModal';
 import { AuthContext } from '../context/AuthContext';
 
-function Navbar() {
+function Navbar({ onHistoryClick, showHistory }) {
   const [showLoginModal, setShowLoginModal] = useState(false);
   const [showSignupModal, setShowSignupModal] = useState(false);
   const { currentUser, logout } = useContext(AuthContext);
@@ -16,14 +16,15 @@ function Navbar() {
           <span className="logo-text">Colorance</span>
         </div>
         <div className="navbar-links">
-          <a href="/" className="active">Home</a>
+          <a href="/" className={!showHistory ? "active" : ""}>Home</a>
+          {currentUser && (
+            <a href="#" className={showHistory ? "active" : ""} onClick={(e) => {e.preventDefault(); onHistoryClick();}}>History</a>
+          )}
           
           {currentUser ? (
             <>
-              <div className="user-info">
-                <span className="user-name">Hello, {currentUser.name}</span>
-                <button className="nav-button" onClick={logout}>Logout</button>
-              </div>
+              <span className="user-name">Hello, {currentUser.name}</span>
+              <a href="#" onClick={(e) => {e.preventDefault(); logout();}}>Logout</a>
             </>
           ) : (
             <>

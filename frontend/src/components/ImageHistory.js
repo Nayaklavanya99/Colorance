@@ -7,6 +7,7 @@ function ImageHistory() {
   const [images, setImages] = useState([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState('');
+  const [previewImage, setPreviewImage] = useState(null);
   const { currentUser } = useContext(AuthContext);
 
   useEffect(() => {
@@ -37,6 +38,26 @@ function ImageHistory() {
     document.body.appendChild(link);
     link.click();
     document.body.removeChild(link);
+  };
+
+  const handleDelete = async (imageId) => {
+    if (!window.confirm('Are you sure you want to delete this image? This action cannot be undone.')) {
+      return;
+    }
+
+    try {
+      await axios.delete(`/api/images/${imageId}`, {
+        headers: {
+          'Authorization': `Bearer ${localStorage.getItem('token')}`
+        }
+      });
+      
+      // Remove the image from the local state
+      setImages(images.filter(img => img.id !== imageId));
+    } catch (err) {
+      console.error('Error deleting image:', err);
+      setError('Failed to delete image');
+    }
   };
 
   if (!currentUser) {
@@ -71,6 +92,7 @@ function ImageHistory() {
                     src={`data:image/jpeg;base64,${image.original_image}`} 
                     alt="Original" 
                     className="history-image" 
+                    onClick={() => setPreviewImage({src: `data:image/jpeg;base64,${image.original_image}`, title: 'Original Image'})}
                   />
                 </div>
                 <div className="history-image-container">
@@ -79,22 +101,41 @@ function ImageHistory() {
                     src={`data:image/jpeg;base64,${image.colorized_image}`} 
                     alt="Colorized" 
                     className="history-image" 
+                    onClick={() => setPreviewImage({src: `data:image/jpeg;base64,${image.colorized_image}`, title: 'Colorized Image'})}
                   />
                 </div>
               </div>
               <div className="history-actions">
-                <button 
-                  className="download-button small" 
-                  onClick={() => handleDownload(image.colorized_image, `colorized-${image.id}.jpg`)}
-                >
-                  Download
-                </button>
+                <div className="action-buttons">
+                  <button 
+                    className="download-button small" 
+                    onClick={() => handleDownload(image.colorized_image, `colorized-${image.id}.jpg`)}
+                  >
+                    Download
+                  </button>
+                  <button 
+                    className="delete-button small" 
+                    onClick={() => handleDelete(image.id)}
+                  >
+                    Delete
+                  </button>
+                </div>
                 <span className="history-date">
                   {new Date(image.created_at).toLocaleDateString()}
                 </span>
               </div>
             </div>
           ))}
+        </div>
+      )}
+      
+      {previewImage && (
+        <div className="preview-modal" onClick={() => setPreviewImage(null)}>
+          <div className="preview-content" onClick={(e) => e.stopPropagation()}>
+            <button className="preview-close" onClick={() => setPreviewImage(null)}>×</button>
+            <h3>{previewImage.title}</h3>
+            <img src={previewImage.src} alt={previewImage.title} className="preview-image" />
+          </div>
         </div>
       )}
     </div>

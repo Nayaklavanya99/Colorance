@@ -5,6 +5,7 @@ import Dropzone from './components/Dropzone';
 import Navbar from './components/Navbar';
 import ResultSection from './components/ResultSection';
 import SuccessModal from './components/SuccessModal';
+import ImageHistory from './components/ImageHistory';
 import { AuthProvider, AuthContext } from './context/AuthContext';
 
 function AppContent() {
@@ -15,6 +16,7 @@ function AppContent() {
   const [error, setError] = useState('');
   const [showSuccessModal, setShowSuccessModal] = useState(false);
   const [successMessage, setSuccessMessage] = useState('');
+  const [showHistory, setShowHistory] = useState(false);
   const { currentUser, loading: authLoading } = useContext(AuthContext);
 
   const handleImageUpload = async (file) => {
@@ -85,30 +87,36 @@ function AppContent() {
 
   return (
     <div className="app">
-      <Navbar />
+      <Navbar onHistoryClick={() => setShowHistory(!showHistory)} showHistory={showHistory} />
       <main className="container">
-        <section className="hero">
-          <h1>Transform Black & White Images with AI</h1>
-          <p>Upload your image and watch the magic happen</p>
-        </section>
+        {showHistory ? (
+          <ImageHistory />
+        ) : (
+          <>
+            <section className="hero">
+              <h1>Transform Black & White Images with AI</h1>
+              <p>Upload your image and watch the magic happen</p>
+            </section>
 
-        <Dropzone onImageUpload={handleImageUpload} />
+            <Dropzone onImageUpload={handleImageUpload} />
 
-        {loading && (
-          <div className="loading">
-            <div className="spinner"></div>
-            <p>Processing your image...</p>
-          </div>
-        )}
+            {loading && (
+              <div className="loading">
+                <div className="spinner"></div>
+                <p>Processing your image...</p>
+              </div>
+            )}
 
-        {error && <div className="error">{error}</div>}
+            {error && <div className="error">{error}</div>}
 
-        {originalImage && colorizedImage && (
-          <ResultSection 
-            originalImage={originalImage} 
-            colorizedImage={colorizedImage} 
-            onDownload={handleDownload} 
-          />
+            {originalImage && colorizedImage && (
+              <ResultSection 
+                originalImage={originalImage} 
+                colorizedImage={colorizedImage} 
+                onDownload={handleDownload} 
+              />
+            )}
+          </>
         )}
       </main>
       <footer>
