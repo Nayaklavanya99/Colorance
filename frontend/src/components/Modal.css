@@ -136,3 +136,21 @@
   color: #9b4dff;
   text-decoration: underline;
 }
+
+.success-modal {
+  max-width: 400px;
+}
+
+.success-content {
+  padding: 1.5rem;
+  text-align: center;
+}
+
+.success-icon {
+  margin-bottom: 1rem;
+  color: #4caf50;
+}
+
+.success-icon svg {
+  margin: 0 auto;
+}

@@ -1,11 +1,13 @@
-import React, { useState } from 'react';
+import React, { useState, useContext } from 'react';
 import './Navbar.css';
 import LoginModal from './LoginModal';
 import SignupModal from './SignupModal';
+import { AuthContext } from '../context/AuthContext';
 
-function Navbar() {
+function Navbar({ onHistoryClick, showHistory }) {
   const [showLoginModal, setShowLoginModal] = useState(false);
   const [showSignupModal, setShowSignupModal] = useState(false);
+  const { currentUser, logout } = useContext(AuthContext);
 
   return (
     <nav className="navbar">
@@ -14,9 +16,22 @@ function Navbar() {
           <span className="logo-text">Colorance</span>
         </div>
         <div className="navbar-links">
-          <a href="/" className="active">Home</a>
-          <button className="nav-button" onClick={() => setShowLoginModal(true)}>Login</button>
-          <button className="nav-button signup" onClick={() => setShowSignupModal(true)}>Sign Up</button>
+          <a href="/" className={!showHistory ? "active" : ""}>Home</a>
+          {currentUser && (
+            <a href="#" className={showHistory ? "active" : ""} onClick={(e) => {e.preventDefault(); onHistoryClick();}}>History</a>
+          )}
+          
+          {currentUser ? (
+            <>
+              <span className="user-name">Hello, {currentUser.name}</span>
+              <a href="#" onClick={(e) => {e.preventDefault(); logout();}}>Logout</a>
+            </>
+          ) : (
+            <>
+              <button className="nav-button" onClick={() => setShowLoginModal(true)}>Login</button>
+              <button className="nav-button signup" onClick={() => setShowSignupModal(true)}>Sign Up</button>
+            </>
+          )}
         </div>
       </div>
       

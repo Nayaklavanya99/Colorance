@@ -1,5 +1,8 @@
-import React, { useState } from 'react';
+import React, { useState, useContext } from 'react';
 import './Modal.css';
+import { AuthContext } from '../context/AuthContext';
+import axios from 'axios';
+import SuccessModal from './SuccessModal';
 
 function SignupModal({ onClose, onLoginClick }) {
   const [name, setName] = useState('');
@@ -7,8 +10,12 @@ function SignupModal({ onClose, onLoginClick }) {
   const [password, setPassword] = useState('');
   const [confirmPassword, setConfirmPassword] = useState('');
   const [error, setError] = useState('');
+  const [loading, setLoading] = useState(false);
+  const [showSuccessModal, setShowSuccessModal] = useState(false);
+  
+  const { login } = useContext(AuthContext);
 
-  const handleSubmit = (e) => {
+  const handleSubmit = async (e) => {
     e.preventDefault();
     
     // Simple validation
@@ -22,11 +29,36 @@ function SignupModal({ onClose, onLoginClick }) {
       return;
     }
     
-    // In a real app, you would send a request to your backend here
-    console.log('Signup attempt with:', { name, email });
+    setLoading(true);
+    setError('');
     
-    // For demo purposes, just close the modal
-    onClose();
+    try {
+      const response = await axios.post('/api/register', {
+        name,
+        email,
+        password
+      });
+      
+      // Store token and user data
+      login(response.data.token, response.data.user);
+      
+      // Show success modal
+      setShowSuccessModal(true);
+      
+      // Close modal after success modal is shown
+      setTimeout(() => {
+        onClose();
+      }, 2000);
+    } catch (err) {
+      console.error('Signup error:', err);
+      if (err.response && err.response.data && err.response.data.error) {
+        setError(err.response.data.error);
+      } else {
+        setError('Registration failed. Please try again.');
+      }
+    } finally {
+      setLoading(false);
+    }
   };
 
   return (
@@ -48,6 +80,7 @@ function SignupModal({ onClose, onLoginClick }) {
               value={name}
               onChange={(e) => setName(e.target.value)}
               placeholder="Enter your name"
+              disabled={loading}
             />
           </div>
           
@@ -59,6 +92,7 @@ function SignupModal({ onClose, onLoginClick }) {
               value={email}
               onChange={(e) => setEmail(e.target.value)}
               placeholder="Enter your email"
+              disabled={loading}
             />
           </div>
           
@@ -70,6 +104,7 @@ function SignupModal({ onClose, onLoginClick }) {
               value={password}
               onChange={(e) => setPassword(e.target.value)}
               placeholder="Create a password"
+              disabled={loading}
             />
           </div>
           
@@ -81,21 +116,32 @@ function SignupModal({ onClose, onLoginClick }) {
               value={confirmPassword}
               onChange={(e) => setConfirmPassword(e.target.value)}
               placeholder="Confirm your password"
+              disabled={loading}
             />
           </div>
           
-          <button type="submit" className="submit-button">Sign Up</button>
+          <button type="submit" className="submit-button" disabled={loading}>
+            {loading ? 'Signing up...' : 'Sign Up'}
+          </button>
         </form>
         
         <div className="modal-footer">
           <p>
             Already have an account?{' '}
-            <button className="text-button" onClick={onLoginClick}>
+            <button className="text-button" onClick={onLoginClick} disabled={loading}>
               Login
             </button>
           </p>
         </div>
       </div>
+      
+      {showSuccessModal && (
+        <SuccessModal
+          message="Account created successfully!"
+          onClose={() => setShowSuccessModal(false)}
+          autoCloseTime={2000}
+        />
+      )}
     </div>
   );
 }

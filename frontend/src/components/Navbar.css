@@ -87,6 +87,17 @@
   transform: translateY(-2px);
 }
 
+.user-info {
+  display: flex;
+  align-items: center;
+  gap: 1rem;
+}
+
+.user-name {
+  color: #9b4dff;
+  font-weight: 500;
+}
+
 /* Responsive styles */
 @media (max-width: 768px) {
   .navbar-container {
@@ -97,5 +108,12 @@
   .navbar-links {
     width: 100%;
     justify-content: center;
+    flex-wrap: wrap;
+  }
+  
+  .user-info {
+    flex-direction: column;
+    gap: 0.5rem;
+    margin-top: 0.5rem;
   }
 }
