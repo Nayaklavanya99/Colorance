@@ -44,6 +44,20 @@
   color: #e0e0e0;
 }
 
+.image-container:last-child h3 {
+  background: linear-gradient(45deg, #9b4dff, #4d9fff);
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+  background-clip: text;
+  font-weight: 600;
+}
+
+.image-container:last-child {
+  border: 2px solid transparent;
+  background: linear-gradient(#1e1e1e, #1e1e1e) padding-box,
+              linear-gradient(45deg, #9b4dff, #4d9fff) border-box;
+}
+
 .result-image {
   max-width: 100%;
   height: auto;

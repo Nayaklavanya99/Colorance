@@ -1,4 +1,4 @@
-import React, { useState, useContext, useEffect } from 'react';
+import React, { useState, useContext } from 'react';
 import axios from 'axios';
 import './App.css';
 import Dropzone from './components/Dropzone';
@@ -17,7 +17,7 @@ function AppContent() {
   const [showSuccessModal, setShowSuccessModal] = useState(false);
   const [successMessage, setSuccessMessage] = useState('');
   const [showHistory, setShowHistory] = useState(false);
-  const { currentUser, loading: authLoading } = useContext(AuthContext);
+  const { currentUser } = useContext(AuthContext);
 
   const handleImageUpload = async (file) => {
     // Check if user is logged in
@@ -94,7 +94,7 @@ function AppContent() {
         ) : (
           <>
             <section className="hero">
-              <h1>Transform Black & White Images with AI</h1>
+              <h1>Transform Black & White Image with AI</h1>
               <p>Upload your image and watch the magic happen</p>
             </section>
 
@@ -103,7 +103,7 @@ function AppContent() {
             {loading && (
               <div className="loading">
                 <div className="spinner"></div>
-                <p>Processing your image...</p>
+                <p>Colorizing your image...</p>
               </div>
             )}
 

@@ -58,6 +58,8 @@ if not os.path.exists(UPLOAD_FOLDER):
 # Initialize ModelScope pipeline
 img_colorization = None
 
+
+
 def initialize_model():
     global img_colorization
     try:
@@ -65,21 +67,11 @@ def initialize_model():
         
         from modelscope.pipelines import pipeline
         from modelscope.utils.constant import Tasks
-        from huggingface_hub import snapshot_download
         
         MODEL_DIR = './makeitcolor'
-        
-        # Download model if not exists
         if not os.path.exists(MODEL_DIR):
-            print("Downloading model...")
-            snapshot_download(
-                repo_id="muhammadnoman76/makeitcolor", 
-                local_dir=MODEL_DIR, 
-                repo_type="model"
-            )
-            print("Model downloaded successfully")
-        else:
-            print("Model directory exists")
+            print(f"Model directory not found: {MODEL_DIR}")
+            return
         
         # Initialize pipeline
         print("Initializing pipeline...")
@@ -91,6 +83,8 @@ def initialize_model():
         print(f"Error type: {type(e)}")
         traceback.print_exc()
         img_colorization = None
+
+
 
 # Initialize model on startup
 print("App starting...")
@@ -230,6 +224,8 @@ def get_user():
         print(f"Get user error: {e}")
         return jsonify({'error': 'Failed to get user data'}), 500
 
+
+
 # Image Colorization Route
 @app.route('/api/colorize', methods=['POST'])
 def colorize_image():
@@ -290,7 +286,7 @@ def colorize_image():
         
         return jsonify({
             'colorized_image': img_data,
-            'filename': f"colored_{file.filename}"
+            'filename': os.path.basename(colored_path)
         })
         
     except Exception as e:
