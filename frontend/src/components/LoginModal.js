@@ -12,13 +12,27 @@ function LoginModal({ onClose, onSignupClick }) {
   const [showSuccessModal, setShowSuccessModal] = useState(false);
   
   const { login } = useContext(AuthContext);
+  
+  // Validation pattern: alphanumeric, minimum 7 chars
+  const VALID_PATTERN = /^[A-Za-z0-9]{7,}$/;
+  const [passwordValid, setPasswordValid] = useState(null);
+
+  const validatePassword = (val) => {
+    const ok = VALID_PATTERN.test(val);
+    setPasswordValid(ok);
+    return ok;
+  };
 
   const handleSubmit = async (e) => {
     e.preventDefault();
-    
-    // Simple validation
+    // Client-side validation
     if (!email || !password) {
       setError('Please fill in all fields');
+      return;
+    }
+
+    if (!validatePassword(password)) {
+      setError('Password must be alphanumeric and at least 7 characters');
       return;
     }
     
@@ -82,10 +96,16 @@ function LoginModal({ onClose, onSignupClick }) {
               type="password"
               id="password"
               value={password}
-              onChange={(e) => setPassword(e.target.value)}
-              placeholder="Enter your password"
+              onChange={(e) => { setPassword(e.target.value); validatePassword(e.target.value); }}
+              placeholder="Enter your password (alphanumeric, min 7)"
               disabled={loading}
+              className={passwordValid === true ? 'input-valid' : passwordValid === false ? 'input-invalid' : ''}
             />
+            <div className="validation-row">
+              {passwordValid === true && <div className="validation-success"><span className="validation-icon">✔️</span><span>Looks good</span></div>}
+              {passwordValid === false && <div className="validation-error"><span className="validation-icon">❌</span><span>Password must be alphanumeric, min 7</span></div>}
+              {passwordValid === null && <div className="validation-hint">Use 7+ letters and numbers</div>}
+            </div>
           </div>
           
           <button type="submit" className="submit-button" disabled={loading}>
@@ -110,6 +130,7 @@ function LoginModal({ onClose, onSignupClick }) {
           autoCloseTime={2000}
         />
       )}
+      
     </div>
   );
 }

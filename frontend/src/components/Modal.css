@@ -154,3 +154,50 @@
 .success-icon svg {
   margin: 0 auto;
 }
+
+/* Validation UI */
+.input-valid {
+  border-color: #4caf50 !important;
+  box-shadow: 0 0 0 3px rgba(76, 175, 80, 0.08);
+}
+
+.input-invalid {
+  border-color: #e74c3c !important;
+  box-shadow: 0 0 0 3px rgba(231, 76, 60, 0.06);
+}
+
+.validation-row {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  margin-top: 0.5rem;
+}
+
+.validation-icon {
+  width: 18px;
+  height: 18px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.validation-hint {
+  font-size: 0.9rem;
+  color: #aaa;
+}
+
+.validation-error {
+  color: #e74c3c;
+  font-size: 0.9rem;
+  display: flex;
+  align-items: center;
+  gap: 0.4rem;
+}
+
+.validation-success {
+  color: #4caf50;
+  font-size: 0.9rem;
+  display: flex;
+  align-items: center;
+  gap: 0.4rem;
+}

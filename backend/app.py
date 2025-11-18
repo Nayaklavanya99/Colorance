@@ -10,9 +10,13 @@ from flask_jwt_extended import JWTManager, create_access_token, jwt_required, ge
 from dotenv import load_dotenv
 from datetime import timedelta
 import traceback
+import re
 
 # Load environment variables
 load_dotenv()
+
+# Pydantic for request validation
+from pydantic import BaseModel, EmailStr, ValidationError, constr
 
 app = Flask(__name__)
 CORS(app)
@@ -26,6 +30,22 @@ bcrypt = Bcrypt(app)
 # In-memory storage as fallback
 users_db = {}
 images_db = []
+
+# Validation: alphanumeric, minimum 7 chars
+ALNUM_7_REGEX = r'^[A-Za-z0-9]{7,}$'
+
+class RegisterSchema(BaseModel):
+    # name is free-form (no regex validation as requested)
+    name: str
+    email: EmailStr
+    # use min_length in Pydantic and enforce alphanumeric via explicit regex check below
+    password: constr(min_length=7)
+
+class LoginSchema(BaseModel):
+    email: EmailStr
+    password: constr(min_length=7)
+
+# Forgot password feature removed per request
 
 # MongoDB Connection
 try:
@@ -51,7 +71,7 @@ except Exception as e:
     USE_MONGODB = False
 
 # Create uploads directory if it doesn't exist
-UPLOAD_FOLDER = 'uploads'
+UPLOAD_FOLDER = r'D:\COLORANCE\files'
 if not os.path.exists(UPLOAD_FOLDER):
     os.makedirs(UPLOAD_FOLDER)
 
@@ -97,26 +117,37 @@ def register():
         print("Registration attempt...")
         data = request.get_json()
         print(f"Registration data received: {data}")
+        # Validate input using Pydantic
+        try:
+            payload = RegisterSchema(**(data or {}))
+        except ValidationError as ve:
+            print("Validation error during registration:", ve)
+            return jsonify({'error': ve.errors()}), 400
         
-        # Check if required fields are present
-        if not data or not data.get('email') or not data.get('password') or not data.get('name'):
-            return jsonify({'error': 'Missing required fields'}), 400
-        
+        # Use validated payload values
+        name = payload.name
+        email = payload.email
+        password_raw = payload.password
+
+        # Enforce alphanumeric requirement (regex) for password
+        if not re.fullmatch(ALNUM_7_REGEX, password_raw):
+            return jsonify({'error': 'Password must be alphanumeric and at least 7 characters'}), 400
+
         # Check if user already exists
         if USE_MONGODB:
-            if users_collection.find_one({'email': data['email']}):
+            if users_collection.find_one({'email': email}):
                 return jsonify({'error': 'User already exists'}), 409
         else:
-            if data['email'] in users_db:
+            if email in users_db:
                 return jsonify({'error': 'User already exists'}), 409
         
         # Hash password
-        hashed_password = bcrypt.generate_password_hash(data['password']).decode('utf-8')
+        hashed_password = bcrypt.generate_password_hash(password_raw).decode('utf-8')
         
         # Create user document
         user = {
-            'name': data['name'],
-            'email': data['email'],
+            'name': name,
+            'email': email,
             'password': hashed_password,
             'created_at': np.datetime64('now').astype(str)
         }
@@ -155,18 +186,27 @@ def login():
         print("Login attempt...")
         data = request.get_json()
         print(f"Login data received: {data}")
-        
-        # Check if required fields are present
-        if not data or not data.get('email') or not data.get('password'):
-            return jsonify({'error': 'Missing email or password'}), 400
+        # Validate input using Pydantic
+        try:
+            payload = LoginSchema(**(data or {}))
+        except ValidationError as ve:
+            print("Validation error during login:", ve)
+            return jsonify({'error': ve.errors()}), 400
+
+        email = payload.email
+        password_raw = payload.password
+
+        # Enforce alphanumeric requirement (regex) for password
+        if not re.fullmatch(ALNUM_7_REGEX, password_raw):
+            return jsonify({'error': 'Password must be alphanumeric and at least 7 characters'}), 400
         
         # Find user
         if USE_MONGODB:
-            user = users_collection.find_one({'email': data['email']})
-            print(f"MongoDB lookup for: {data['email']}")
+            user = users_collection.find_one({'email': email})
+            print(f"MongoDB lookup for: {email}")
         else:
-            user = users_db.get(data['email'])
-            print(f"In-memory lookup for: {data['email']}, found: {user is not None}")
+            user = users_db.get(email)
+            print(f"In-memory lookup for: {email}, found: {user is not None}")
             print(f"Available users: {list(users_db.keys())}")
         
         # Check if user exists and password is correct
@@ -174,14 +214,14 @@ def login():
             print(f"Login failed: User not found - {data['email']}")
             return jsonify({'error': 'Invalid email or password'}), 401
         
-        if not bcrypt.check_password_hash(user['password'], data['password']):
-            print(f"Login failed: Incorrect password for {data['email']}")
+        if not bcrypt.check_password_hash(user['password'], password_raw):
+            print(f"Login failed: Incorrect password for {email}")
             return jsonify({'error': 'Invalid email or password'}), 401
         
         # Create access token
-        access_token = create_access_token(identity=data['email'])
-        
-        print(f"User logged in successfully: {data['email']}")
+        access_token = create_access_token(identity=email)
+
+        print(f"User logged in successfully: {email}")
         
         return jsonify({
             'message': 'Login successful',

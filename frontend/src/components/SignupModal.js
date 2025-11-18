@@ -15,17 +15,36 @@ function SignupModal({ onClose, onLoginClick }) {
   
   const { login } = useContext(AuthContext);
 
+  // Validation pattern for password only: alphanumeric, minimum 7 chars
+  const VALID_PATTERN = /^[A-Za-z0-9]{7,}$/;
+
+  // validity states for password/confirm only: null = untouched, true = valid, false = invalid
+  const [passwordValid, setPasswordValid] = useState(null);
+  const [confirmValid, setConfirmValid] = useState(null);
+
+  const validatePassword = (val) => {
+    const ok = VALID_PATTERN.test(val);
+    setPasswordValid(ok);
+    if (confirmPassword !== '') setConfirmValid(val === confirmPassword);
+    return ok;
+  };
+
   const handleSubmit = async (e) => {
     e.preventDefault();
-    
-    // Simple validation
+    // Client-side validation
     if (!name || !email || !password || !confirmPassword) {
       setError('Please fill in all fields');
       return;
     }
     
+    if (!validatePassword(password)) {
+      setError('Password must be alphanumeric and at least 7 characters');
+      return;
+    }
+
     if (password !== confirmPassword) {
       setError('Passwords do not match');
+      setConfirmValid(false);
       return;
     }
     
@@ -78,7 +97,7 @@ function SignupModal({ onClose, onLoginClick }) {
               type="text"
               id="name"
               value={name}
-              onChange={(e) => setName(e.target.value)}
+              onChange={(e) => { setName(e.target.value); }}
               placeholder="Enter your name"
               disabled={loading}
             />
@@ -102,10 +121,16 @@ function SignupModal({ onClose, onLoginClick }) {
               type="password"
               id="password"
               value={password}
-              onChange={(e) => setPassword(e.target.value)}
-              placeholder="Create a password"
+              onChange={(e) => { setPassword(e.target.value); validatePassword(e.target.value); }}
+                placeholder="Create a password (alphanumeric, min 7)"
               disabled={loading}
+              className={passwordValid === true ? 'input-valid' : passwordValid === false ? 'input-invalid' : ''}
             />
+            <div className="validation-row">
+              {passwordValid === true && <div className="validation-success"><span className="validation-icon">✔️</span><span>Strong</span></div>}
+              {passwordValid === false && <div className="validation-error"><span className="validation-icon">❌</span><span>Password must be alphanumeric, min 7</span></div>}
+              {passwordValid === null && <div className="validation-hint">Use 7+ letters and numbers</div>}
+            </div>
           </div>
           
           <div className="form-group">
@@ -114,10 +139,15 @@ function SignupModal({ onClose, onLoginClick }) {
               type="password"
               id="confirmPassword"
               value={confirmPassword}
-              onChange={(e) => setConfirmPassword(e.target.value)}
+              onChange={(e) => { setConfirmPassword(e.target.value); setConfirmValid(password === e.target.value); }}
               placeholder="Confirm your password"
               disabled={loading}
+              className={confirmValid === true ? 'input-valid' : confirmValid === false ? 'input-invalid' : ''}
             />
+            <div className="validation-row">
+              {confirmValid === true && <div className="validation-success"><span className="validation-icon">✔️</span><span>Passwords match</span></div>}
+              {confirmValid === false && <div className="validation-error"><span className="validation-icon">❌</span><span>Passwords do not match</span></div>}
+            </div>
           </div>
           
           <button type="submit" className="submit-button" disabled={loading}>

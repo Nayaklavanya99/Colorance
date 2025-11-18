@@ -12,3 +12,4 @@ PyPDF2
 requests
 modelscope
 huggingface-hub
+pydantic[email]
